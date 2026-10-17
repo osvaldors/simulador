@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulador 2º turno 2026</title>
+<style>
+:root{--bg:#f6f6f3;--card:#fff;--tx:#1b1b1b;--mut:#6b6b6b;--bd:#e2e2dc;--lula:#d62828;--fl:#1d5fd1;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121212;--card:#1d1d1d;--tx:#f0f0ee;--mut:#9a9a96;--bd:#333;--lula:#ef5350;--fl:#5b9bff}}
+:root[data-theme="dark"]{--bg:#121212;--card:#1d1d1d;--tx:#f0f0ee;--mut:#9a9a96;--bd:#333;--lula:#ef5350;--fl:#5b9bff}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.4}
+main{max-width:640px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:4px 0 2px}
+.sub{color:var(--mut);font-size:13px;margin:0 0 14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:14px}
+.duel{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cand{border-radius:10px;padding:10px;border-top:4px solid}
+.cand.l{border-color:var(--lula)}.cand.f{border-color:var(--fl)}
+.cand .n{font-weight:700;font-size:15px}.cand .p{font-size:12px;color:var(--mut)}
+.cand .pct{font-size:28px;font-weight:800;font-variant-numeric:tabular-nums}
+.cand.l .pct{color:var(--lula)}.cand.f .pct{color:var(--fl)}
+.cand .v{font-size:14px;font-variant-numeric:tabular-nums}
+.bar{display:flex;height:14px;border-radius:7px;overflow:hidden;margin:12px 0 8px;background:var(--bd)}
+.bar i{display:block;transition:width .15s}
+.res{text-align:center;font-weight:700;font-size:15px}
+.res small{display:block;font-weight:400;color:var(--mut);font-size:12px}
+h2{font-size:15px;margin:0 0 10px}
+.row{padding:10px 0;border-top:1px solid var(--bd)}
+.row:first-of-type{border-top:0}
+.top{display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.top b{font-weight:600}.top span{color:var(--mut);font-variant-numeric:tabular-nums;font-size:13px;text-align:right}
+input[type=range]{width:100%;margin:8px 0 2px;accent-color:var(--mut)}
+.ends{display:flex;justify-content:space-between;font-size:11px;color:var(--mut)}
+.out{font-size:12px;margin-top:4px;font-variant-numeric:tabular-nums;color:var(--mut)}
+.out .a{color:var(--lula);font-weight:600}.out .b{color:var(--fl);font-weight:600}
+button{font:inherit;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;padding:8px 14px;cursor:pointer}
+.pin{display:block;font-size:12px;color:var(--mut);margin-top:6px}.pin input{width:70px;font:inherit;padding:4px 6px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx)}
+.note{font-size:11px;color:var(--mut);margin-top:6px}
+</style>
+</head>
+<body>
+<main>
+<h1>Simulador do 2º turno · 25/10/2026</h1>
+<p class="sub">Parte dos resultados do 1º turno (100% das seções). Cada slider divide 100% dos votos do grupo entre os dois candidatos (ex.: 60% Flávio / 40% Lula).</p>
+
+<div class="card">
+  <div class="duel">
+    <div class="cand l"><div class="n">Lula (PT)</div><div class="p">1º turno: 45,16%</div><div class="pct" id="lp">–</div><div class="v" id="lv">–</div></div>
+    <div class="cand f"><div class="n">Flávio Bolsonaro (PL)</div><div class="p">1º turno: 47,03%</div><div class="pct" id="fp">–</div><div class="v" id="fv">–</div></div>
+  </div>
+  <div class="bar"><i id="bl" style="background:var(--lula)"></i><i id="bf" style="background:var(--fl)"></i></div>
+  <div class="res" id="res"></div>
+</div>
+
+<div class="card">
+  <h2>Votos dos demais candidatos</h2>
+  <div id="cands"></div>
+</div>
+
+<div class="card">
+  <h2>Brancos, nulos e abstenções</h2>
+  <div id="others"></div>
+  <div class="note">Brancos e nulos não contam como válidos. Defina no campo quantos % de cada grupo passariam a votar (ex.: 30% da abstenção); o slider divide apenas esses votos entre os dois candidatos.</div>
+</div>
+
+<button id="reset">Voltar tudo para 50/50</button>
+<p class="note">Fontes: TSE e imprensa (apuração 100% do 1º turno). Votos de Caiado calculados por diferença do total de válidos; brancos e nulos somam 5.975.047 (comparecimento 125.275.835 menos válidos), com a divisão entre os dois aproximada. Abstenção regional conforme TSE/imprensa; Exterior calculado por diferença até o total de 33.469.244.</p>
+</main>
+
+<script>
+const LULA=53879538, FL=56104503;
+const groups=[
+ {n:"Augusto Cury (Avante)",v:3448569,c:1},
+ {n:"Renan Santos (Missão)",v:2675887,c:1},
+ {n:"Ronaldo Caiado (PSD)",v:2620172,c:1},
+ {n:"Romeu Zema (Novo)",v:326488,c:1},
+ {n:"Samara Martins (UP)",v:122911,c:1},
+ {n:"Hertz Dias (PSTU)",v:43103,c:1},
+ {n:"Clariana Barão (DC)",v:40043,c:1},
+ {n:"Edmilson Costa (PCB)",v:22693,c:1},
+ {n:"Wilson Grassi (Democrata)",v:16881,c:1},
+ {n:"Votos brancos",v:2300000,o:1},
+ {n:"Votos nulos",v:3675047,o:1},
+ {n:"Abstenção · Sudeste",v:15063212,r:22.70,o:1,a:1,h:"Abstenções por região (total 33.469.244 · 21,08%)<label class='pin'>Aplicar a todas as regiões: <input type='number' min='0' max='100' step='0.1' value='0' data-all='1'> %</label>"},
+ {n:"Abstenção · Nordeste",v:8002366,r:18.39,o:1,a:1},
+ {n:"Abstenção · Sul",v:4678334,r:20.46,o:1,a:1},
+ {n:"Abstenção · Norte",v:2546182,r:19.43,o:1,a:1},
+ {n:"Abstenção · Centro-Oeste",v:2604805,r:21.70,o:1,a:1},
+ {n:"Abstenção · Exterior (por diferença)",v:574345,o:1,a:1}
+];
+const fmt=n=>Math.round(n).toLocaleString("pt-BR");
+const pc=n=>n.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+"%";
+const $=id=>document.getElementById(id);
+const val=groups.map(()=>50);
+const TURN=125275835;
+groups.forEach(g=>g.p=0);
+
+groups.forEach((g,i)=>{
+  const d=document.createElement("div");d.className="row";
+  d.innerHTML=(g.h?`<h2 style="margin-top:10px">${g.h}</h2>`:"")+`<div class="top"><b>${g.n}</b><span>${fmt(g.v)} ${g.a?"ausentes":"votos"}${g.a?(g.r?` · ${pc(g.r)} do eleitorado`:""):(g.o?` · ${pc(g.v/TURN*100)} dos votos totais`:"")}</span></div>
+  ${g.o?`<label class="pin">% deste grupo que vai votar: <input type="number" min="0" max="100" step="0.1" value="0" data-p="${i}"> %</label>`:""}
+  <input type="range" min="0" max="100" step="1" value="50" data-i="${i}">
+  <div class="ends"><span>← 100% Lula</span><span>50/50</span><span>100% Flávio →</span></div>
+  <div class="out" id="o${i}"></div>`;
+  (g.c?$("cands"):$("others")).appendChild(d);
+});
+
+function calc(){
+  let l=LULA,f=FL;
+  groups.forEach((g,i)=>{
+    const q=g.o?g.p/100*g.v:g.v,x=val[i],b=x/100*q,a=q-b;
+    l+=a;f+=b;
+    $("o"+i).innerHTML=(g.o?`Votariam: ${fmt(q)}<br>`:"")+`<span class="a">Lula ${100-x}% · +${fmt(a)}</span> &nbsp;|&nbsp; <span class="b">Flávio ${x}% · +${fmt(b)}</span>`;
+  });
+  const t=l+f,lp=l/t*100,fp=f/t*100;
+  $("lv").textContent=fmt(l)+" votos";$("fv").textContent=fmt(f)+" votos";
+  $("lp").textContent=pc(lp);$("fp").textContent=pc(fp);
+  $("bl").style.width=lp+"%";$("bf").style.width=fp+"%";
+  const w=l>f?"Lula":"Flávio Bolsonaro",m=Math.abs(l-f);
+  $("res").innerHTML=l===f?"Empate":`${w} lidera por ${fmt(m)} votos (${pc(Math.abs(lp-fp))} pts)<small>Total de votos válidos: ${fmt(t)}</small>`;
+}
+document.addEventListener("input",e=>{
+  if(e.target.dataset.all!==undefined){const p=Math.min(100,Math.max(0,parseFloat(e.target.value)||0));groups.forEach((g,i)=>{if(g.a){g.p=p;document.querySelector('[data-p="'+i+'"]').value=p}});calc();return}
+  if(e.target.dataset.p!==undefined){let p=parseFloat(e.target.value);groups[+e.target.dataset.p].p=isNaN(p)?0:Math.min(100,Math.max(0,p));calc();return}
+  if(e.target.dataset.i===undefined)return;
+  const i=+e.target.dataset.i;val[i]=+e.target.value;
+  e.target.style.accentColor=val[i]<50?"var(--lula)":val[i]>50?"var(--fl)":"var(--mut)";
+  calc();
+});
+$("reset").onclick=()=>{document.querySelectorAll("input[type=range]").forEach(r=>{r.value=50;r.style.accentColor="var(--mut)"});val.fill(50);groups.forEach(g=>g.p=0);document.querySelectorAll("input[type=number]").forEach(n=>n.value=0);calc()};
+calc();
+</script>
+</body>
+</html>
